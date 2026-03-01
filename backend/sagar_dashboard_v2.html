@@ -1,0 +1,1650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>CureLogic</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;500&family=Bebas+Neue&display=swap" rel="stylesheet"/>
+<style>
+/* ═══════════════════════════════════════════════════════
+   DESIGN TOKENS
+═══════════════════════════════════════════════════════ */
+:root {
+  --bg0: #02050E;
+  --bg1: #060C1A;
+  --bg2: #0A1222;
+  --bg3: #0E192E;
+  --surface: #0D1828;
+  --surface2: #111F35;
+  --border: #182840;
+  --border2: #1E3352;
+
+  --cyan: #00E5FF;
+  --cyan-dim: #006E80;
+  --cyan-glow: rgba(0,229,255,0.18);
+  --green: #00FF87;
+  --green-dim: #004D28;
+  --green-glow: rgba(0,255,135,0.15);
+  --orange: #FF6B35;
+  --orange-glow: rgba(255,107,53,0.15);
+  --gold: #FFD700;
+  --gold-glow: rgba(255,215,0,0.12);
+  --red: #FF2D55;
+  --red-glow: rgba(255,45,85,0.15);
+  --purple: #A855F7;
+  --purple-glow: rgba(168,85,247,0.15);
+
+  --t1: #EDF4FF;
+  --t2: #6B8CAE;
+  --t3: #2E4A66;
+  --t4: #1A2F47;
+
+  --radius: 4px;
+  --panel-pad: 20px;
+}
+
+/* ═══════════════════════════════════════════════════════
+   RESET & BASE
+═══════════════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { font-size: 14px; }
+
+body {
+  background: var(--bg0);
+  color: var(--t1);
+  font-family: 'JetBrains Mono', monospace;
+  overflow-x: hidden;
+  min-height: 100vh;
+  -webkit-background-clip: text;
+   background-clip: text;
+}
+
+/* Animated grid background */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    linear-gradient(rgba(0,229,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,229,255,0.025) 1px, transparent 1px);
+  background-size: 48px 48px;
+  pointer-events: none;
+  z-index: 0;
+  animation: gridDrift 60s linear infinite;
+}
+
+@keyframes gridDrift {
+  0% { background-position: 0 0; }
+  100% { background-position: 48px 48px; }
+}
+
+/* Atmospheric glow */
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background:
+    radial-gradient(ellipse 55% 40% at 10% 20%, rgba(0,229,255,0.07) 0%, transparent 65%),
+    radial-gradient(ellipse 45% 55% at 90% 80%, rgba(168,85,247,0.05) 0%, transparent 65%),
+    radial-gradient(ellipse 30% 30% at 85% 15%, rgba(255,107,53,0.04) 0%, transparent 55%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.wrap {
+  position: relative; z-index: 1;
+  max-width: 1720px;
+  margin: 0 auto;
+  padding: 14px 20px 24px;
+}
+
+/* ═══════════════════════════════════════════════════════
+   COMMON PANEL
+═══════════════════════════════════════════════════════ */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--panel-pad);
+  position: relative;
+  overflow: hidden;
+}
+
+.panel::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0,229,255,0.12), transparent);
+}
+
+.ph {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 12px;
+}
+
+.pt {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.82rem; font-weight: 700;
+  letter-spacing: 2.5px; text-transform: uppercase;
+  display: flex; align-items: center; gap: 8px;
+  color: var(--t1);
+}
+
+.dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--a, var(--cyan));
+  box-shadow: 0 0 8px var(--a, var(--cyan)), 0 0 16px var(--a, var(--cyan));
+  flex-shrink: 0;
+}
+
+.pb {
+  font-size: 0.58rem;
+  padding: 2px 8px;
+  border: 1px solid var(--border2);
+  color: var(--t3);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  border-radius: 2px;
+  background: var(--bg2);
+}
+
+/* ═══════════════════════════════════════════════════════
+   CONNECTION BANNER
+═══════════════════════════════════════════════════════ */
+#conn-banner {
+  display: flex; align-items: center; gap: 10px;
+  padding: 7px 14px; margin-bottom: 12px;
+  font-size: 0.68rem; letter-spacing: 0.8px;
+  border: 1px solid var(--border);
+  background: var(--bg1);
+  border-radius: var(--radius);
+  transition: all 0.4s ease;
+}
+
+#conn-banner.connected { border-color: rgba(0,255,135,0.4); background: rgba(0,255,135,0.03); }
+#conn-banner.error { border-color: rgba(255,45,85,0.4); background: rgba(255,45,85,0.03); }
+
+.conn-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--t3); flex-shrink: 0;
+  transition: background 0.4s;
+}
+
+#conn-banner.connected .conn-dot { background: var(--green); animation: blink 1.6s ease-in-out infinite; }
+#conn-banner.error .conn-dot { background: var(--red); }
+
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+#conn-url { margin-left: auto; color: var(--t3); font-size: 0.62rem; }
+
+/* ═══════════════════════════════════════════════════════
+   HEADER
+═══════════════════════════════════════════════════════ */
+header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 24px;
+  border: 1px solid var(--border);
+  background: linear-gradient(135deg, rgba(0,229,255,0.04) 0%, var(--bg1) 60%, rgba(168,85,247,0.03) 100%);
+  backdrop-filter: blur(12px);
+  margin-bottom: 16px;
+  border-radius: var(--radius);
+  position: relative; overflow: hidden;
+}
+
+header::before {
+  content: '';
+  position: absolute; left: 0; top: 0;
+  width: 3px; height: 100%;
+  background: linear-gradient(180deg, var(--cyan), var(--purple), var(--orange));
+  border-radius: 0 0 0 4px;
+}
+
+/* Animated scan line */
+header::after {
+  content: '';
+  position: absolute; left: 0; right: 0; top: 0; height: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--cyan) 50%, transparent 100%);
+  opacity: 0.4;
+  animation: scanLine 4s linear infinite;
+}
+
+@keyframes scanLine {
+  0% { transform: translateY(0); opacity: 0.4; }
+  100% { transform: translateY(70px); opacity: 0; }
+}
+
+.logo-wrap { display: flex; align-items: center; gap: 14px; }
+
+.logo-icon {
+  width: 46px; height: 46px; border-radius: 10px;
+  background: linear-gradient(135deg, var(--cyan), var(--purple));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+  box-shadow: 0 0 0 1px rgba(0,229,255,0.3), 0 0 24px rgba(0,229,255,0.2);
+  animation: iconGlow 3.5s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+@keyframes iconGlow {
+  0%,100% { box-shadow: 0 0 0 1px rgba(0,229,255,0.3), 0 0 24px rgba(0,229,255,0.2); }
+  50% { box-shadow: 0 0 0 1px rgba(0,229,255,0.6), 0 0 40px rgba(0,229,255,0.4); }
+}
+
+.logo-text h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 2rem; letter-spacing: 5px;
+  background: linear-gradient(90deg, var(--cyan) 0%, #ffffff 40%, var(--cyan) 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer 5s linear infinite;
+  line-height: 1;
+}
+
+@keyframes shimmer { 0%{background-position:0% 0%} 100%{background-position:200% 0%} }
+
+.logo-text p {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.72rem; color: var(--t2);
+  letter-spacing: 2px; text-transform: uppercase;
+  margin-top: 2px;
+}
+
+.header-meta { display: flex; align-items: center; gap: 20px; }
+
+.header-stats {
+  display: flex; gap: 20px;
+  padding-right: 20px;
+  border-right: 1px solid var(--border);
+}
+
+.hstat { text-align: center; }
+.hstat-val {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.3rem; color: var(--cyan);
+  line-height: 1;
+  text-shadow: 0 0 12px rgba(0,229,255,0.5);
+}
+.hstat-lbl { font-size: 0.55rem; color: var(--t3); letter-spacing: 1.5px; text-transform: uppercase; }
+
+.header-right { text-align: right; }
+
+.live-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 11px;
+  border: 1px solid rgba(0,255,135,0.5);
+  border-radius: 20px;
+  color: var(--green);
+  font-size: 0.65rem; letter-spacing: 1.5px;
+  margin-bottom: 4px;
+  background: rgba(0,255,135,0.05);
+}
+
+#clock { font-size: 0.65rem; color: var(--t2); }
+.tag { font-size: 0.62rem; letter-spacing: 2px; color: var(--orange); font-family: 'Rajdhani', sans-serif; }
+
+/* ═══════════════════════════════════════════════════════
+   KPI STRIP
+═══════════════════════════════════════════════════════ */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.kpi {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 14px;
+  position: relative; overflow: hidden;
+  transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+  cursor: default;
+  animation: fadeUp 0.5s ease both;
+}
+
+.kpi::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: var(--a, var(--cyan));
+  box-shadow: 0 0 14px var(--a, var(--cyan));
+}
+
+/* Corner accent */
+.kpi::after {
+  content: '';
+  position: absolute; bottom: 0; right: 0;
+  width: 24px; height: 24px;
+  background: linear-gradient(225deg, var(--a, var(--cyan)), transparent);
+  opacity: 0.12;
+}
+
+.kpi:hover {
+  transform: translateY(-3px);
+  border-color: var(--a, var(--cyan));
+  box-shadow: 0 4px 24px rgba(0,0,0,0.4), 0 0 0 1px var(--a, var(--cyan)), inset 0 0 20px rgba(0,229,255,0.02);
+}
+
+.kpi-lbl {
+  font-size: 0.59rem; color: var(--t2);
+  letter-spacing: 2px; text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.kpi-val {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 2.1rem;
+  color: var(--a, var(--cyan));
+  text-shadow: 0 0 20px var(--a, var(--cyan));
+  line-height: 1;
+}
+
+.kpi-unit { font-size: 0.72rem; color: var(--t2); margin-left: 2px; }
+
+.kpi-sub { font-size: 0.62rem; color: var(--t3); margin-top: 6px; }
+
+.kpi-trend {
+  position: absolute; bottom: 8px; right: 10px;
+  font-size: 0.6rem; font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 2px;
+}
+.kpi-trend.up { color: var(--green); background: rgba(0,255,135,0.1); }
+.kpi-trend.dn { color: var(--red); background: rgba(255,45,85,0.1); }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+
+.kpi:nth-child(1){animation-delay:.04s}
+.kpi:nth-child(2){animation-delay:.09s}
+.kpi:nth-child(3){animation-delay:.14s}
+.kpi:nth-child(4){animation-delay:.19s}
+.kpi:nth-child(5){animation-delay:.24s}
+
+/* ═══════════════════════════════════════════════════════
+   MAIN 3-COL GRID
+═══════════════════════════════════════════════════════ */
+.main { display: grid; grid-template-columns: 1fr 1fr 340px; gap: 14px; margin-bottom: 14px; }
+
+/* ── Chart Containers ── */
+.chart-wrap {
+  position: relative;
+  width: 100%;
+  height: 200px; /* fixed, stable height */
+}
+
+.chart-wrap canvas {
+  position: absolute !important;
+  top: 0 !important; left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* ── Progress Bars ── */
+.bar-wrap { margin: 7px 0; }
+
+.bar-row {
+  display: flex; justify-content: space-between;
+  font-size: 0.62rem; color: var(--t2);
+  margin-bottom: 4px;
+  letter-spacing: 0.5px;
+}
+
+.bar-track {
+  height: 7px;
+  background: var(--bg3);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+
+.bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 1.4s cubic-bezier(0.4,0,0.2,1);
+  position: relative;
+}
+
+.bar-fill::after {
+  content: '';
+  position: absolute; right: 0; top: 0; bottom: 0;
+  width: 3px; border-radius: 4px;
+  background: rgba(255,255,255,0.9);
+  animation: flash 1.6s ease-in-out infinite;
+}
+
+@keyframes flash { 0%,100%{opacity:0.9} 50%{opacity:0} }
+
+.bar-cyan { background: linear-gradient(90deg, var(--cyan-dim), var(--cyan)); box-shadow: 0 0 8px rgba(0,229,255,0.4); }
+.bar-green { background: linear-gradient(90deg, #004020, var(--green)); box-shadow: 0 0 8px rgba(0,255,135,0.4); }
+.bar-orange { background: linear-gradient(90deg, #5C2800, var(--orange)); }
+.bar-purple { background: linear-gradient(90deg, #3B0080, var(--purple)); }
+
+/* ── Sensor Rows ── */
+.sensor-list { display: flex; flex-direction: column; gap: 7px; margin-top: 12px; }
+
+.sensor-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 10px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  transition: border-color 0.2s;
+}
+
+.sensor-row:hover { border-color: var(--border2); }
+
+.sensor-icon { font-size: 1rem; width: 24px; text-align: center; flex-shrink: 0; }
+
+.sensor-info { flex: 0 0 76px; }
+
+.sensor-name { font-size: 0.56rem; color: var(--t3); letter-spacing: 1.5px; text-transform: uppercase; }
+
+.sensor-val {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.25rem; color: var(--cyan);
+  letter-spacing: 1px; line-height: 1.1;
+}
+
+.sensor-bar { flex: 1; height: 3px; background: var(--bg3); overflow: hidden; border-radius: 4px; }
+.sensor-bar-fill { height: 100%; border-radius: 4px; transition: width 0.9s ease; }
+
+/* ═══════════════════════════════════════════════════════
+   WEATHER / INTEL PANEL
+═══════════════════════════════════════════════════════ */
+.weather-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+.wi {
+  background: var(--bg2); border: 1px solid var(--border);
+  padding: 10px 11px; border-radius: var(--radius);
+}
+
+.wi-lbl { font-size: 0.56rem; color: var(--t3); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 4px; }
+
+.wi-val { font-family: 'Bebas Neue', sans-serif; font-size: 1.6rem; line-height: 1; }
+
+.wi-unit { font-size: 0.62rem; color: var(--t2); margin-left: 2px; }
+
+.rec-box {
+  margin-top: 12px; padding: 11px 13px;
+  border-left: 3px solid var(--green);
+  background: rgba(0,255,135,0.03);
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+
+.rec-lbl { font-size: 0.55rem; color: var(--t3); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 4px; }
+.rec-txt { font-size: 0.72rem; color: var(--green); line-height: 1.5; }
+
+.savings-box {
+  margin-top: 10px; padding: 11px;
+  background: rgba(255,215,0,0.04);
+  border: 1px solid rgba(255,215,0,0.18);
+  border-radius: var(--radius);
+}
+
+.savings-lbl { font-size: 0.55rem; color: var(--t3); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 4px; }
+
+.savings-val {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.8rem; color: var(--gold);
+  text-shadow: 0 0 16px rgba(255,215,0,0.4);
+}
+
+/* ═══════════════════════════════════════════════════════
+   SIMULATOR PANEL
+═══════════════════════════════════════════════════════ */
+.sim-panel { margin-bottom: 14px; }
+
+.sim-controls {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr) auto auto;
+  gap: 12px;
+  margin-bottom: 16px;
+  align-items: end;
+}
+
+.fg label {
+  display: block;
+  font-size: 0.58rem; color: var(--t3);
+  letter-spacing: 2px; text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.fc {
+  width: 100%;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  color: var(--t1);
+  padding: 8px 11px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  outline: none;
+  border-radius: var(--radius);
+  transition: border-color 0.2s, box-shadow 0.2s;
+  appearance: none;
+}
+
+.fc:focus { border-color: var(--cyan); box-shadow: 0 0 0 2px rgba(0,229,255,0.12); }
+.fc option { background: var(--bg2); }
+
+.btn {
+  padding: 9px 20px;
+  background: transparent;
+  cursor: pointer;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700; font-size: 0.85rem;
+  letter-spacing: 2px; text-transform: uppercase;
+  border-radius: var(--radius);
+  position: relative; overflow: hidden;
+  transition: all 0.25s ease;
+  white-space: nowrap;
+}
+
+.btn::before {
+  content: '';
+  position: absolute; inset: 0;
+  transform: translateX(-101%);
+  transition: transform 0.25s ease;
+  z-index: 0;
+}
+
+.btn:hover::before { transform: translateX(0); }
+.btn:hover { color: var(--bg0); }
+.btn:active { transform: scale(0.97); }
+
+.btn span { position: relative; z-index: 1; }
+
+.btn-cyan { border: 1px solid var(--cyan); color: var(--cyan); }
+.btn-cyan::before { background: var(--cyan); }
+
+.btn-orange { border: 1px solid var(--orange); color: var(--orange); }
+.btn-orange::before { background: var(--orange); }
+
+/* Sim Results Grid */
+.sim-results {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.src {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  position: relative; overflow: hidden;
+  transition: border-color 0.2s, transform 0.2s;
+}
+
+.src:hover { transform: translateY(-2px); }
+
+.src.best {
+  border-color: rgba(0,255,135,0.5);
+  background: rgba(0,255,135,0.025);
+  box-shadow: 0 0 20px rgba(0,255,135,0.08);
+}
+
+.src.best::before {
+  content: 'OPTIMAL';
+  position: absolute; top: 7px; right: 7px;
+  font-size: 0.5rem; letter-spacing: 2px;
+  color: var(--green); background: rgba(0,255,135,0.1);
+  padding: 2px 6px; border: 1px solid rgba(0,255,135,0.4);
+  border-radius: 2px;
+}
+
+.src-m {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.15rem; letter-spacing: 2px; margin-bottom: 10px;
+}
+
+.src-s { display: flex; justify-content: space-between; margin-bottom: 4px; align-items: center; }
+.src-sl { font-size: 0.58rem; color: var(--t3); }
+.src-sv { font-size: 0.68rem; }
+
+.src-sv2 {
+  margin-top: 8px; padding: 6px;
+  background: rgba(0,255,135,0.06);
+  text-align: center;
+  font-size: 0.7rem; color: var(--green);
+  border-radius: 2px;
+}
+
+/* ═══════════════════════════════════════════════════════
+   BOTTOM — LEADERBOARD + LOG
+═══════════════════════════════════════════════════════ */
+.bottom { display: grid; grid-template-columns: 1fr 340px; gap: 14px; }
+
+.scenario-table { width: 100%; border-collapse: collapse; }
+
+.scenario-table th {
+  font-size: 0.58rem; color: var(--t3);
+  letter-spacing: 2px; text-transform: uppercase;
+  padding: 8px 8px; text-align: left;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.scenario-table td {
+  font-size: 0.68rem;
+  padding: 7px 8px;
+  border-bottom: 1px solid rgba(24,40,64,0.6);
+  vertical-align: middle;
+  transition: background 0.15s;
+}
+
+.scenario-table tr:hover td { background: rgba(0,229,255,0.025); }
+
+.rank-b {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px;
+  font-size: 0.6rem; font-weight: 700;
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 3px;
+}
+
+.rank-b.g { background: rgba(255,215,0,0.12); border-color: rgba(255,215,0,0.5); color: var(--gold); }
+.rank-b.s { background: rgba(192,192,192,0.08); border-color: rgba(192,192,192,0.4); color: #C0C0C0; }
+.rank-b.b { background: rgba(205,127,50,0.08); border-color: rgba(205,127,50,0.4); color: #CD7F32; }
+
+.mt {
+  display: inline-block;
+  padding: 2px 7px; font-size: 0.58rem;
+  letter-spacing: 1px; border-radius: 2px;
+}
+
+.mt.wet { border: 1px solid var(--cyan-dim); color: var(--cyan); background: rgba(0,229,255,0.05); }
+.mt.steam { border: 1px solid rgba(255,107,53,0.5); color: var(--orange); background: rgba(255,107,53,0.05); }
+.mt.membrane { border: 1px solid rgba(168,85,247,0.5); color: var(--purple); background: rgba(168,85,247,0.05); }
+
+.pos { color: var(--green); font-weight: 700; }
+.neg { color: var(--red); }
+
+/* ── Log Terminal ── */
+.log-box {
+  background: var(--bg0);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+  height: 180px;
+  overflow-y: auto;
+  font-size: 0.63rem;
+  line-height: 1.9;
+}
+
+.log-box::-webkit-scrollbar { width: 3px; }
+.log-box::-webkit-scrollbar-track { background: transparent; }
+.log-box::-webkit-scrollbar-thumb { background: var(--cyan-dim); border-radius: 4px; }
+
+.ll { display: flex; gap: 8px; margin-bottom: 1px; }
+.lt { color: var(--t4); flex-shrink: 0; width: 68px; }
+.lv-info { color: var(--cyan); flex-shrink: 0; }
+.lv-ok   { color: var(--green); flex-shrink: 0; }
+.lv-warn { color: var(--gold); flex-shrink: 0; }
+.lv-alrt { color: var(--red); flex-shrink: 0; }
+.lm { color: var(--t2); word-break: break-all; }
+
+/* Cost chart wrap */
+.cost-chart-wrap {
+  position: relative;
+  width: 100%;
+  height: 120px;
+}
+
+.cost-chart-wrap canvas {
+  position: absolute !important;
+  top: 0 !important; left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* ═══════════════════════════════════════════════════════
+   FOOTER
+═══════════════════════════════════════════════════════ */
+footer {
+  margin-top: 18px; padding: 12px 0;
+  border-top: 1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 0.58rem; color: var(--t3); letter-spacing: 1px;
+}
+
+footer span { color: var(--t2); }
+
+.footer-dots { display: flex; gap: 6px; align-items: center; }
+.footer-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--cyan); opacity: 0.4; }
+
+/* ═══════════════════════════════════════════════════════
+   UTILITY / ANIMATIONS
+═══════════════════════════════════════════════════════ */
+.placeholder-msg {
+  grid-column: 1 / -1;
+  color: var(--t3); font-size: 0.72rem;
+  text-align: center; padding: 24px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  letter-spacing: 1px;
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- ── Connection Banner ── -->
+<div id="conn-banner">
+  <span class="conn-dot"></span>
+  <span id="conn-text">Initialising CureLogic v3 — connecting to backend...</span>
+  <span id="conn-url">http://localhost:5000/api/live</span>
+</div>
+
+<!-- ── Header ── -->
+<header>
+  <div class="logo-wrap">
+    <div class="logo-icon">🧱</div>
+    <div class="logo-text">
+      <h1>CURELOGIC</h1>
+      <p>Team_01 Dashboard @IIT Patna &nbsp;·&nbsp; IoT Integrated &nbsp;·&nbsp; SVM Powered</p>
+    </div>
+  </div>
+
+  <div class="header-meta">
+    <div class="header-stats">
+      <div class="hstat">
+        <div class="hstat-val" id="h-uptime">0.0</div>
+        <div class="hstat-lbl">Uptime hr</div>
+      </div>
+      <div class="hstat">
+        <div class="hstat-val" id="h-readings">0</div>
+        <div class="hstat-lbl">Readings</div>
+      </div>
+      <div class="hstat">
+        <div class="hstat-val" id="h-alerts">0</div>
+        <div class="hstat-lbl">Alerts</div>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <div class="live-pill">
+        <span class="conn-dot" style="width:5px;height:5px"></span>LIVE
+      </div>
+      <div id="clock">—</div>
+      <div class="tag">L&amp;T CreaTech · Problem Statement 01</div>
+    </div>
+  </div>
+</header>
+
+<!-- ── KPI Strip ── -->
+<div class="kpi-grid">
+  <div class="kpi" style="--a:var(--cyan)">
+    <div class="kpi-lbl">Core Temperature</div>
+    <div class="kpi-val" id="k-temp">--<span class="kpi-unit">°C</span></div>
+    <div class="kpi-sub">Surface: <span id="k-surf">--</span>°C</div>
+    <div class="kpi-trend up" id="k-temp-trend">↑</div>
+  </div>
+  <div class="kpi" style="--a:var(--green)">
+    <div class="kpi-lbl">SVM Strength</div>
+    <div class="kpi-val" id="k-str">--<span class="kpi-unit">MPa</span></div>
+    <div class="kpi-sub">Target: 25.0 MPa &nbsp;·&nbsp; <span id="k-str-pct">--%</span></div>
+    <div class="kpi-trend up" id="k-str-trend">↑</div>
+  </div>
+  <div class="kpi" style="--a:var(--gold)">
+    <div class="kpi-lbl">Maturity Index</div>
+    <div class="kpi-val" id="k-mat">--<span class="kpi-unit">°C·hr</span></div>
+    <div class="kpi-sub">Nurse-Saul Method</div>
+  </div>
+  <div class="kpi" style="--a:var(--orange)">
+    <div class="kpi-lbl">ETA to Demould</div>
+    <div class="kpi-val" id="k-eta">--<span class="kpi-unit">hr</span></div>
+    <div class="kpi-sub" id="k-eta-sub">SVM predicted</div>
+  </div>
+  <div class="kpi" style="--a:var(--purple)">
+    <div class="kpi-lbl">Cumulative Cost</div>
+    <div class="kpi-val" id="k-cost">--<span class="kpi-unit">INR</span></div>
+    <div class="kpi-sub">Proj: ₹<span id="k-proj">--</span></div>
+  </div>
+</div>
+
+<!-- ── Main 3-column ── -->
+<div class="main">
+
+  <!-- Strength Chart -->
+  <div class="panel">
+    <div class="ph">
+      <div class="pt"><span class="dot" style="--a:var(--green)"></span>Strength Gain (SVM)</div>
+      <div class="pb" id="p-source">SVM · LIVE</div>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="cStrength"></canvas>
+    </div>
+    <div style="margin-top:14px">
+      <div class="bar-wrap">
+        <div class="bar-row"><span>M30 Target Progress</span><span id="bp-str">0%</span></div>
+        <div class="bar-track"><div class="bar-fill bar-cyan" id="b-str" style="width:0%"></div></div>
+      </div>
+      <div class="bar-wrap">
+        <div class="bar-row"><span>Maturity Progress</span><span id="bp-mat">0%</span></div>
+        <div class="bar-track"><div class="bar-fill bar-purple" id="b-mat" style="width:0%"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Temperature Chart -->
+  <div class="panel">
+    <div class="ph">
+      <div class="pt"><span class="dot" style="--a:var(--cyan)"></span>Temperature Monitor</div>
+      <div class="pb">3-CHANNEL · DS18B20</div>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="cTemp"></canvas>
+    </div>
+    <div class="sensor-list">
+      <div class="sensor-row">
+        <div class="sensor-icon">🔴</div>
+        <div class="sensor-info">
+          <div class="sensor-name">Core</div>
+          <div class="sensor-val" id="sv-core">--°C</div>
+        </div>
+        <div class="sensor-bar">
+          <div class="sensor-bar-fill" id="sb-core"
+            style="width:0%;background:linear-gradient(90deg,#6B0000,var(--red))"></div>
+        </div>
+      </div>
+      <div class="sensor-row">
+        <div class="sensor-icon">🟡</div>
+        <div class="sensor-info">
+          <div class="sensor-name">Mid-Depth</div>
+          <div class="sensor-val" id="sv-mid">--°C</div>
+        </div>
+        <div class="sensor-bar">
+          <div class="sensor-bar-fill" id="sb-mid"
+            style="width:0%;background:linear-gradient(90deg,#6B5500,var(--gold))"></div>
+        </div>
+      </div>
+      <div class="sensor-row">
+        <div class="sensor-icon">🔵</div>
+        <div class="sensor-info">
+          <div class="sensor-name">Surface</div>
+          <div class="sensor-val" id="sv-surf">--°C</div>
+        </div>
+        <div class="sensor-bar">
+          <div class="sensor-bar-fill" id="sb-surf"
+            style="width:0%;background:linear-gradient(90deg,var(--cyan-dim),var(--cyan))"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Weather + Intel -->
+  <div class="panel">
+    <div class="ph">
+      <div class="pt"><span class="dot" style="--a:var(--orange)"></span>Weather Intel</div>
+      <div class="pb">PUNE, IN</div>
+    </div>
+    <div class="weather-grid">
+      <div class="wi">
+        <div class="wi-lbl">Ambient Temp</div>
+        <div class="wi-val" style="color:var(--orange)" id="w-temp">32<span class="wi-unit">°C</span></div>
+      </div>
+      <div class="wi">
+        <div class="wi-lbl">Humidity</div>
+        <div class="wi-val" style="color:var(--cyan)" id="w-hum">65<span class="wi-unit">%</span></div>
+      </div>
+      <div class="wi">
+        <div class="wi-lbl">Batch Season</div>
+        <div class="wi-val" style="color:var(--purple);font-size:1.1rem;margin-top:2px" id="w-season">Summer</div>
+      </div>
+      <div class="wi">
+        <div class="wi-lbl">Method</div>
+        <div class="wi-val" style="color:var(--gold);font-size:1.1rem;margin-top:2px" id="w-method">Steam</div>
+      </div>
+    </div>
+    <div class="rec-box" id="rec-box">
+      <div class="rec-lbl">AI Curing Recommendation</div>
+      <div class="rec-txt" id="rec-txt">Connecting to backend...</div>
+    </div>
+    <div class="savings-box">
+      <div class="savings-lbl">Daily Savings vs Baseline</div>
+      <div class="savings-val">₹ <span id="daily-sav">--</span></div>
+      <div style="font-size:0.6rem;color:var(--t3);margin-top:3px">vs standard wet-curing</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Simulator Panel ── -->
+<div class="panel sim-panel">
+  <div class="ph">
+    <div class="pt"><span class="dot" style="--a:var(--purple)"></span>Scenario Simulation Engine</div>
+    <div class="pb">SVM MODEL v1.0 · LIVE BACKEND</div>
+  </div>
+  <div class="sim-controls">
+    <div class="fg">
+      <label>Curing Method</label>
+      <select class="fc" id="s-method">
+        <option value="Steam" selected>Steam Curing</option>
+        <option value="Wet">Wet Curing</option>
+        <option value="Membrane">Membrane</option>
+      </select>
+    </div>
+    <div class="fg">
+      <label>Season</label>
+      <select class="fc" id="s-season">
+        <option value="Monsoon" selected>Monsoon</option>
+        <option value="Summer">Summer</option>
+        <option value="Winter">Winter</option>
+        <option value="Spring">Spring</option>
+      </select>
+    </div>
+    <div class="fg">
+      <label>Cement (kg/m³)</label>
+      <input type="number" class="fc" id="s-cement" value="400" min="300" max="500" step="10">
+    </div>
+    <div class="fg">
+      <label>W/C Ratio</label>
+      <input type="number" class="fc" id="s-wc" value="0.48" min="0.35" max="0.60" step="0.01">
+    </div>
+    <button class="btn btn-cyan" onclick="runSim()"><span>▶ SIMULATE</span></button>
+    <button class="btn btn-orange" onclick="startSim()"><span id="sim-btn-txt">⚙ START IoT SIM</span></button>
+  </div>
+  <div class="sim-results" id="sim-results">
+    <div class="placeholder-msg">Press ▶ SIMULATE to run SVM scenario analysis</div>
+  </div>
+</div>
+
+<!-- ── Bottom Strip ── -->
+<div class="bottom">
+  <div class="panel">
+    <div class="ph">
+      <div class="pt"><span class="dot" style="--a:var(--gold)"></span>Ranked Strategy Leaderboard</div>
+      <div class="pb">TOP 8 · LIVE API</div>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="scenario-table">
+        <thead>
+          <tr>
+            <th>Rank</th><th>Method</th><th>Season</th>
+            <th>Strength</th><th>Time</th><th>Cost</th><th>Savings</th>
+          </tr>
+        </thead>
+        <tbody id="lb-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:12px">
+    <div class="panel" style="flex:1">
+      <div class="ph">
+        <div class="pt"><span class="dot" style="--a:var(--green)"></span>System Log</div>
+        <div class="pb">LIVE TERMINAL</div>
+      </div>
+      <div class="log-box" id="log-box"></div>
+    </div>
+    <div class="panel">
+      <div class="ph">
+        <div class="pt"><span class="dot" style="--a:var(--orange)"></span>Cost Efficiency</div>
+        <div class="pb">INR/MPa</div>
+      </div>
+      <div class="cost-chart-wrap">
+        <canvas id="cCost"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Footer ── -->
+<footer>
+  <div>CureLogic v3.0 &nbsp;·&nbsp; L&amp;T CreaTech Hackathon &nbsp;·&nbsp; <span>Problem Statement 01: AI Cycle Time Optimisation</span></div>
+  <div class="footer-dots">
+    <span class="footer-dot"></span><span class="footer-dot"></span><span class="footer-dot"></span>
+  </div>
+  <div>Flask · SVM + GAN · NodeMCU IoT · SSE Live Stream &nbsp;·&nbsp; <span>© 2025 CureLogic Team</span></div>
+</footer>
+
+</div><!-- .wrap -->
+
+<script>
+/* ═══════════════════════════════════════════════════════
+   CONFIG
+═══════════════════════════════════════════════════════ */
+var BACKEND = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+  ? 'http://' + location.hostname + ':5000'
+  : 'http://localhost:5000';
+
+var TARGET_MPA  = 25.0;
+var TARGET_MAT  = 900.0;
+var CURE_COSTS  = { Wet: 12.5, Steam: 22.0, Membrane: 8.0 };
+var MOULD_COST  = 450.0;
+var SEASON_TEMP = { Summer: 38, Monsoon: 30, Winter: 18, Spring: 28 };
+var METHOD_MULT = { Wet: 1, Steam: 0.72, Membrane: 1.15 };
+
+var simulatorOn   = false;
+var evtSource     = null;
+var reconnTimer   = null;
+var localTickTimer = null;
+var alertCount    = 0;
+var readingCount  = 0;
+var sessionStart  = Date.now();
+
+/* Previous values for trend arrows */
+var prevStr = 0, prevTemp = 0;
+
+/* Chart history buffers */
+var histLabels = [], histStr = [], histTarget = [];
+var histCore = [], histMid = [], histSurf = [];
+var MAX_HIST = 60;
+
+/* ═══════════════════════════════════════════════════════
+   CLOCK
+═══════════════════════════════════════════════════════ */
+setInterval(function () {
+  document.getElementById('clock').textContent =
+    new Date().toLocaleString('en-IN', {
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+      day: '2-digit', month: 'short', year: 'numeric'
+    });
+  var uptime = ((Date.now() - sessionStart) / 3600000).toFixed(1);
+  var el = document.getElementById('h-uptime');
+  if (el) el.textContent = uptime;
+}, 1000);
+
+/* ═══════════════════════════════════════════════════════
+   CHART SETUP
+═══════════════════════════════════════════════════════ */
+var chartStr, chartTemp, chartCost;
+
+function makeChartOpts(extra) {
+  return Object.assign({
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: { duration: 200 },
+    plugins: {
+      legend: {
+        labels: {
+          color: '#6B8CAE',
+          font: { family: 'JetBrains Mono', size: 10 },
+          boxWidth: 10,
+          padding: 12
+        }
+      },
+      tooltip: {
+        backgroundColor: 'rgba(6,12,26,0.92)',
+        borderColor: '#182840',
+        borderWidth: 1,
+        titleColor: '#EDF4FF',
+        bodyColor: '#6B8CAE',
+        titleFont: { family: 'JetBrains Mono', size: 10 },
+        bodyFont: { family: 'JetBrains Mono', size: 10 },
+        padding: 10,
+        cornerRadius: 4
+      }
+    },
+    scales: {
+      x: {
+        ticks: { color: '#2E4A66', font: { size: 9 }, maxTicksLimit: 8, maxRotation: 0 },
+        grid: { color: 'rgba(24,40,64,0.6)', drawBorder: false }
+      },
+      y: {
+        ticks: { color: '#2E4A66', font: { size: 9 } },
+        grid: { color: 'rgba(24,40,64,0.6)', drawBorder: false }
+      }
+    }
+  }, extra || {});
+}
+
+function initCharts() {
+  /* Strength chart */
+  var sc = document.getElementById('cStrength').getContext('2d');
+  chartStr = new Chart(sc, {
+    type: 'line',
+    data: {
+      labels: histLabels,
+      datasets: [
+        {
+          label: 'SVM Strength (MPa)',
+          data: histStr,
+          borderColor: '#00FF87',
+          backgroundColor: 'rgba(0,255,135,0.06)',
+          borderWidth: 2, pointRadius: 0, tension: 0.4, fill: true
+        },
+        {
+          label: 'Target 25 MPa',
+          data: histTarget,
+          borderColor: 'rgba(255,45,85,0.45)',
+          borderDash: [5, 4],
+          borderWidth: 1.5, pointRadius: 0, fill: false
+        }
+      ]
+    },
+    options: makeChartOpts()
+  });
+
+  /* Temperature chart */
+  var tc = document.getElementById('cTemp').getContext('2d');
+  chartTemp = new Chart(tc, {
+    type: 'line',
+    data: {
+      labels: histLabels,
+      datasets: [
+        {
+          label: 'Core',
+          data: histCore,
+          borderColor: '#FF2D55',
+          backgroundColor: 'rgba(255,45,85,0.04)',
+          borderWidth: 1.5, pointRadius: 0, tension: 0.4, fill: true
+        },
+        {
+          label: 'Mid-Depth',
+          data: histMid,
+          borderColor: '#FFD700',
+          backgroundColor: 'rgba(255,215,0,0.03)',
+          borderWidth: 1.5, pointRadius: 0, tension: 0.4, fill: true
+        },
+        {
+          label: 'Surface',
+          data: histSurf,
+          borderColor: '#00E5FF',
+          backgroundColor: 'rgba(0,229,255,0.03)',
+          borderWidth: 1.5, pointRadius: 0, tension: 0.4, fill: true
+        }
+      ]
+    },
+    options: makeChartOpts()
+  });
+
+  /* Cost efficiency bar chart */
+  var cc = document.getElementById('cCost').getContext('2d');
+  var costOpts = makeChartOpts({ indexAxis: 'y' });
+  costOpts.plugins.legend = { display: false };
+  chartCost = new Chart(cc, {
+    type: 'bar',
+    data: {
+      labels: ['Wet Cure', 'Steam Cure', 'Membrane'],
+      datasets: [{
+        label: 'Cost/MPa (INR)',
+        data: [185, 98, 142],
+        backgroundColor: [
+          'rgba(0,229,255,0.25)',
+          'rgba(255,107,53,0.25)',
+          'rgba(168,85,247,0.25)'
+        ],
+        borderColor: ['#00E5FF', '#FF6B35', '#A855F7'],
+        borderWidth: 1,
+        borderRadius: 3
+      }]
+    },
+    options: costOpts
+  });
+}
+
+/* ═══════════════════════════════════════════════════════
+   SSE — LIVE STATE
+═══════════════════════════════════════════════════════ */
+var lastDataTs = null;
+
+function connectSSE() {
+  if (evtSource) { evtSource.close(); evtSource = null; }
+  var banner = document.getElementById('conn-banner');
+  banner.className = '';
+  document.getElementById('conn-text').textContent = 'Connecting to CureLogic backend...';
+  document.getElementById('conn-url').textContent = BACKEND + '/api/live';
+
+  evtSource = new EventSource(BACKEND + '/api/live');
+
+  evtSource.onopen = function () {
+    banner.className = 'connected';
+    document.getElementById('conn-text').textContent = '✓  Live connection established — SVM predictions streaming';
+    addLog('ok', 'SSE connection established to Flask backend');
+    if (localTickTimer) { clearInterval(localTickTimer); localTickTimer = null; }
+    if (reconnTimer)    { clearInterval(reconnTimer); reconnTimer = null; }
+  };
+
+  evtSource.onmessage = function (e) {
+    try {
+      var d = JSON.parse(e.data);
+      if (d.last_updated && d.last_updated === lastDataTs) return;
+      lastDataTs = d.last_updated;
+      readingCount++;
+      var el = document.getElementById('h-readings');
+      if (el) el.textContent = readingCount;
+      updateDashboard(d);
+    } catch (err) { console.error('SSE parse error', err); }
+  };
+
+  evtSource.onerror = function () {
+    banner.className = 'error';
+    document.getElementById('conn-text').textContent =
+      '✗  Backend offline — running in demo mode (simulated data)';
+    addLog('warn', 'Backend unreachable — switched to local simulation');
+    evtSource.close(); evtSource = null;
+    if (!localTickTimer) localTickTimer = setInterval(localTick, 2500);
+    if (!reconnTimer) reconnTimer = setTimeout(connectSSE, 10000);
+  };
+}
+
+/* ═══════════════════════════════════════════════════════
+   DASHBOARD UPDATE
+═══════════════════════════════════════════════════════ */
+function updateDashboard(d) {
+  var strPct = Math.min(((d.strength_mpa || 0) / TARGET_MPA) * 100, 100);
+  var matPct = Math.min(((d.maturity_index || 0) / TARGET_MAT) * 100, 100);
+ /* Weather Intel (External API) */
+  if (d.external_ambient !== undefined && d.external_ambient !== null) {
+      document.getElementById('w-temp').innerHTML =
+        d.external_ambient.toFixed(1) + '<span class="wi-unit">°C</span>';
+  }
+
+  if (d.external_humidity !== undefined && d.external_humidity !== null) {
+      document.getElementById('w-hum').innerHTML =
+        d.external_humidity.toFixed(0) + '<span class="wi-unit">%</span>';
+  }
+  /* ── KPIs ── */
+  var tempVal = d.temp_core != null ? d.temp_core.toFixed(1) : '--';
+  var strVal  = d.strength_mpa != null ? d.strength_mpa.toFixed(2) : '--';
+  var matVal  = Math.round(d.maturity_index || 0);
+  var etaVal  = (d.eta_hours != null ? d.eta_hours : 0).toFixed(1);
+  var costVal = Math.round(d.cumulative_cost || 0);
+
+  setText('k-temp', tempVal + '<span class="kpi-unit">°C</span>');
+  setText('k-surf', d.temp_surface != null ? d.temp_surface.toFixed(1) : '--');
+  setText('k-str', strVal + '<span class="kpi-unit">MPa</span>');
+  setText('k-str-pct', strPct.toFixed(0) + '%');
+  setText('k-mat', matVal + '<span class="kpi-unit">°C·hr</span>');
+  setText('k-eta', etaVal + '<span class="kpi-unit">hr</span>');
+  setText('k-eta-sub', (d.eta_hours || 0) < 3 ? '⚠ Almost ready!' : 'SVM predicted');
+  setText('k-cost', costVal + '<span class="kpi-unit">INR</span>');
+  setText('k-proj', Math.round(d.projected_cost || 0));
+
+  /* Trend arrows */
+  var trendTemp = document.getElementById('k-temp-trend');
+  var trendStr  = document.getElementById('k-str-trend');
+  if (trendTemp) {
+    var tempCur = d.temp_core || 0;
+    trendTemp.textContent = tempCur >= prevTemp ? '↑' : '↓';
+    trendTemp.className = 'kpi-trend ' + (tempCur >= prevTemp ? 'up' : 'dn');
+    prevTemp = tempCur;
+  }
+  if (trendStr) {
+    var strCur = d.strength_mpa || 0;
+    trendStr.textContent = strCur >= prevStr ? '↑' : '↓';
+    trendStr.className = 'kpi-trend ' + (strCur >= prevStr ? 'up' : 'dn');
+    prevStr = strCur;
+  }
+
+  /* ── Progress Bars ── */
+  var sb = document.getElementById('b-str');
+  if (sb) {
+    sb.style.width = strPct + '%';
+    sb.className = 'bar-fill ' + (strPct >= 100 ? 'bar-green' : strPct >= 60 ? 'bar-cyan' : 'bar-orange');
+  }
+  setText('bp-str', strPct.toFixed(0) + '%');
+  var mb = document.getElementById('b-mat');
+  if (mb) mb.style.width = matPct + '%';
+  setText('bp-mat', matPct.toFixed(0) + '%');
+
+  /* ── Sensors ── */
+  setText('sv-core', (d.temp_core != null ? d.temp_core.toFixed(1) : '--') + '°C');
+  setText('sv-mid',  (d.temp_mid  != null ? d.temp_mid.toFixed(1)  : '--') + '°C');
+  setText('sv-surf', (d.temp_surface != null ? d.temp_surface.toFixed(1) : '--') + '°C');
+  setBarPct('sb-core', (d.temp_core || 0) / 80 * 100);
+  setBarPct('sb-mid',  (d.temp_mid  || 0) / 80 * 100);
+  setBarPct('sb-surf', (d.temp_surface || 0) / 80 * 100);
+
+  /* ── Charts — rolling buffer ── */
+  if (d.history_tail && d.history_tail.length > 0) {
+    /* Backend provides history: replace buffers */
+    var hist = d.history_tail;
+    chartStr.data.labels  = hist.map(function (h) { return (+h.ts).toFixed(1) + 'h'; });
+    chartStr.data.datasets[0].data = hist.map(function (h) { return +h.strength; });
+    chartStr.data.datasets[1].data = hist.map(function () { return TARGET_MPA; });
+    chartTemp.data.labels = chartStr.data.labels;
+    chartTemp.data.datasets[0].data = hist.map(function (h) { return h.core; });
+    chartTemp.data.datasets[1].data = hist.map(function (h) { return h.mid; });
+    chartTemp.data.datasets[2].data = hist.map(function (h) { return h.surface; });
+  } else {
+    /* No history: push new point into rolling buffer */
+    var now = ((Date.now() - sessionStart) / 3600000).toFixed(2) + 'h';
+    pushHistory(now, d.strength_mpa || 0, d.temp_core || 0, d.temp_mid || 0, d.temp_surface || 0);
+  }
+
+  chartStr.update('none');
+  chartTemp.update('none');
+  
+  /* ── AI Recommendation Update ── */
+  var ambTemp = d.external_ambient != null ? d.external_ambient : 32;
+  var ambHum  = d.external_humidity != null ? d.external_humidity : 60;
+  updateRec(ambTemp, ambHum);
+
+  /* ── Alerts ── */
+  if (d.demoulded) {
+    addLog('ok', '✓ DEMOULDING READY | Strength=' + strVal + 'MPa | Cost=₹' + costVal);
+  }
+  if ((d.temp_core || 0) > 70) {
+    alertCount++;
+    var ac = document.getElementById('h-alerts');
+    if (ac) ac.textContent = alertCount;
+    addLog('alrt', 'THERMAL ALERT: Core ' + tempVal + '°C > 70°C threshold!');
+  }
+}
+
+function pushHistory(label, str, core, mid, surf) {
+  histLabels.push(label);
+  histStr.push(str);
+  histTarget.push(TARGET_MPA);
+  histCore.push(core);
+  histMid.push(mid);
+  histSurf.push(surf);
+  if (histLabels.length > MAX_HIST) {
+    histLabels.shift(); histStr.shift(); histTarget.shift();
+    histCore.shift(); histMid.shift(); histSurf.shift();
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   AI RECOMMENDATION
+═══════════════════════════════════════════════════════ */
+function updateRec(temp, hum) {
+  var txt, col, borderCol;
+  if (temp > 38) {
+    txt = '⚠ HIGH HEAT — Increase curing frequency. Plastic shrinkage risk elevated.';
+    col = 'var(--red)'; borderCol = 'var(--red)';
+  } else if (hum > 80) {
+    txt = '💧 HIGH HUMIDITY — Reduce spray by 15%. Hydration rate accelerated.';
+    col = 'var(--gold)'; borderCol = 'var(--gold)';
+  } else {
+    txt = '✓ CONDITIONS OPTIMAL — Standard schedule. No adjustments required.';
+    col = 'var(--green)'; borderCol = 'var(--green)';
+  }
+  var rt = document.getElementById('rec-txt');
+  var rb = document.getElementById('rec-box');
+  if (rt) { rt.textContent = txt; rt.style.color = col; }
+  if (rb) rb.style.borderLeftColor = borderCol;
+}
+
+/* ═══════════════════════════════════════════════════════
+   SCENARIO SIMULATION
+═══════════════════════════════════════════════════════ */
+function runSim() {
+  var method = document.getElementById('s-method').value;
+  var season = document.getElementById('s-season').value;
+  var cement = +document.getElementById('s-cement').value;
+  var wc     = +document.getElementById('s-wc').value;
+
+  document.getElementById('w-method').textContent = method;
+  document.getElementById('w-season').textContent = season;
+  addLog('info', 'Simulation: ' + method + ' / ' + season + ' / ' + cement + 'kg · W/C=' + wc);
+
+  var simEl = document.getElementById('sim-results');
+  simEl.innerHTML = '<div class="placeholder-msg" style="color:var(--cyan)">⟳ Running SVM analysis...</div>';
+
+  fetch(BACKEND + '/api/scenarios')
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (j) {
+      var scenarios = j ? j.scenarios : localScenarios(cement, season, wc);
+      renderSimResults(scenarios.slice(0, 4));
+      renderLeaderboard(scenarios.slice(0, 8));
+      var best = scenarios[0];
+      var sav = Math.abs(+(best.savings_inr != null ? best.savings_inr : (best.savings != null ? best.savings : 0)));
+      setText('daily-sav', Math.round(sav * 3));
+      addLog('ok', 'Optimal: ' + best.method + '/' + best.season + ' → ₹' + (best.total_cost | 0) + ' | ' + best.cure_time_hrs + 'hr');
+    })
+    .catch(function () {
+      var scenarios = localScenarios(cement, season, wc);
+      renderSimResults(scenarios.slice(0, 4));
+      renderLeaderboard(scenarios.slice(0, 8));
+      var best = scenarios[0];
+      var sav = Math.abs(+(best.savings_inr != null ? best.savings_inr : 0));
+      setText('daily-sav', Math.round(sav * 3));
+      addLog('warn', 'Backend offline — used local SVM fallback');
+    });
+}
+
+function renderSimResults(rows) {
+  if (!rows || rows.length === 0) return;
+  var best = rows[0];
+  var colors = { Wet: '#00E5FF', Steam: '#FF6B35', Membrane: '#A855F7' };
+  var html = rows.map(function (r, i) {
+    var sav = +(r.savings_inr != null ? r.savings_inr : (r.savings != null ? r.savings : 0));
+    var col = colors[r.method] || '#fff';
+    return '<div class="src ' + (i === 0 ? 'best' : '') + '">' +
+      '<div class="src-m" style="color:' + col + '">' + (r.method || '').toUpperCase() + '</div>' +
+      '<div class="src-s"><span class="src-sl">Season</span><span class="src-sv">' + r.season + '</span></div>' +
+      '<div class="src-s"><span class="src-sl">Cure Time</span><span class="src-sv" style="color:' + col + '">' + r.cure_time_hrs + ' hr</span></div>' +
+      '<div class="src-s"><span class="src-sl">Strength</span><span class="src-sv">' + r.strength_mpa + ' MPa</span></div>' +
+      '<div class="src-s"><span class="src-sl">Total Cost</span><span class="src-sv">₹' + (r.total_cost | 0) + '</span></div>' +
+      '<div class="src-sv2">' + (sav > 0 ? '💰 Save ₹' + (Math.abs(sav) | 0) + ' vs Wet' : '📊 Baseline') + '</div>' +
+      '</div>';
+  }).join('');
+
+  /* Optimal summary card */
+  html += '<div class="src" style="border-color:rgba(255,215,0,0.4);background:rgba(255,215,0,0.025)">' +
+    '<div class="src-m" style="color:var(--gold)">OPTIMAL PICK</div>' +
+    '<div style="font-size:0.65rem;color:var(--t2);margin-bottom:10px">AI Pareto-optimal recommendation</div>' +
+    '<div class="src-s"><span class="src-sl">Method</span><span class="src-sv" style="color:var(--gold)">' + best.method + '</span></div>' +
+    '<div class="src-s"><span class="src-sl">Season</span><span class="src-sv">' + best.season + '</span></div>' +
+    '<div class="src-s"><span class="src-sl">Score</span><span class="src-sv">' + (100 - (best.score || 0.5) * 80).toFixed(0) + '/100</span></div>' +
+    '<div class="src-sv2" style="color:var(--gold);background:rgba(255,215,0,0.06)">Pareto Optimal</div>' +
+    '</div>';
+
+  document.getElementById('sim-results').innerHTML = html;
+}
+
+function renderLeaderboard(rows) {
+  if (!rows || rows.length === 0) return;
+  var rc = ['g', 's', 'b'];
+  var mc = { Wet: 'wet', Steam: 'steam', Membrane: 'membrane' };
+  document.getElementById('lb-body').innerHTML = rows.map(function (r, i) {
+    var sav = +(r.savings_inr != null ? r.savings_inr : (r.savings != null ? r.savings : 0));
+    return '<tr>' +
+      '<td><span class="rank-b ' + (rc[i] || '') + '">' + (i + 1) + '</span></td>' +
+      '<td><span class="mt ' + (mc[r.method] || '') + '">' + (r.method || '').toUpperCase() + '</span></td>' +
+      '<td style="color:var(--t2)">' + r.season + '</td>' +
+      '<td style="color:var(--green)">' + r.strength_mpa + ' MPa</td>' +
+      '<td style="color:var(--cyan)">' + r.cure_time_hrs + ' hr</td>' +
+      '<td>₹ ' + (r.total_cost | 0) + '</td>' +
+      '<td class="' + (sav > 0 ? 'pos' : 'neg') + '">' + (sav > 0 ? '+' : '') + ' ₹ ' + (Math.abs(sav) | 0) + '</td>' +
+      '</tr>';
+  }).join('');
+}
+
+/* ═══════════════════════════════════════════════════════
+   IoT SIMULATOR CONTROL
+═══════════════════════════════════════════════════════ */
+function startSim() {
+  var method = document.getElementById('s-method').value;
+  var season = document.getElementById('s-season').value;
+  var cement = +document.getElementById('s-cement').value;
+  var btn    = document.getElementById('sim-btn-txt');
+
+  if (!simulatorOn) {
+    fetch(BACKEND + '/api/simulator/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ season: season, method: method, cement: cement })
+    })
+    .then(function () {
+      simulatorOn = true;
+      btn.textContent = '⏹ STOP IoT SIM';
+      addLog('ok', 'IoT Simulator started | ' + method + ' / ' + season + ' / ' + cement + 'kg');
+    })
+    .catch(function () {
+      addLog('warn', 'Backend offline — running local IoT simulator');
+      simulatorOn = true;
+      btn.textContent = '⏹ STOP IoT SIM';
+      if (!localTickTimer) localTickTimer = setInterval(localTick, 2500);
+    });
+  } else {
+    fetch(BACKEND + '/api/simulator/stop', { method: 'POST' }).catch(function () {});
+    simulatorOn = false;
+    btn.textContent = '⚙ START IoT SIM';
+    addLog('info', 'IoT Simulator stopped');
+    if (localTickTimer) { clearInterval(localTickTimer); localTickTimer = null; }
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   LOCAL FALLBACK SIMULATION
+═══════════════════════════════════════════════════════ */
+var _tick = 0, _el = 0, _mat = 0;
+
+function localTick() {
+  _tick++; _el += 1 / 60;
+  var amb      = 34 + Math.sin(_tick / 10) * 3;
+  var hydration = 20 * Math.exp(-((_el - 8) * (_el - 8)) / 40);
+  var core = amb + hydration + Math.random() * 1.2;
+  var mid  = core * 0.87 + Math.random() * 0.8;
+  var surf = core * 0.72 + Math.random() * 1.0;
+  var avg  = (core + mid + surf) / 3;
+  _mat += (avg + 10) * (1 / 60);
+  var str  = Math.min(Math.max(-12.4 + 7.8 * Math.log(Math.max(_mat, 1)), 0), 58);
+  var cost = (12.5 + 450) * _el;
+  var tgt  = Math.exp((25 + 12.4) / 7.8);
+  var eta  = Math.max((tgt - _mat) / (avg + 10), 0);
+  readingCount++;
+  var el = document.getElementById('h-readings');
+  if (el) el.textContent = readingCount;
+  updateDashboard({
+    temp_core: core, temp_mid: mid, temp_surface: surf,
+    maturity_index: _mat, strength_mpa: str,
+    cumulative_cost: cost, projected_cost: cost + eta * 462.5,
+    eta_hours: eta, demoulded: str >= 25,
+    history_tail: null
+  });
+}
+
+/* ═══════════════════════════════════════════════════════
+   LOCAL SCENARIO MATH
+═══════════════════════════════════════════════════════ */
+function localScenarios(cement, season, wc) {
+  var scenarios = [];
+  var methods  = Object.keys(CURE_COSTS);
+  var seasons  = Object.keys(SEASON_TEMP);
+  var cements  = [370, 400, 430];
+
+  for (var mi = 0; mi < methods.length; mi++) {
+    var m  = methods[mi];
+    var mc = CURE_COSTS[m];
+    for (var si = 0; si < seasons.length; si++) {
+      var s  = seasons[si];
+      var st = SEASON_TEMP[s];
+      for (var ci = 0; ci < cements.length; ci++) {
+        var c   = cements[ci];
+        var et  = (st + 30) / 2;
+        var mat = (et + 10) * 24;
+        var str = Math.min(Math.max(-12.4 + 7.8 * Math.log(mat), 0), 58);
+        var t   = (mat / (et + 10)) * METHOD_MULT[m];
+        var cost = (mc + MOULD_COST) * t;
+        var wet  = (CURE_COSTS.Wet + MOULD_COST) * t / METHOD_MULT[m];
+        var sav  = wet - cost;
+        var score = (t / 48) * 0.5 + (cost / Math.max(str, 1) / 500) * 0.5;
+        if (str >= 25) {
+          scenarios.push({
+            method: m, season: s, cement_kg_m3: c,
+            strength_mpa: str.toFixed(2),
+            cure_time_hrs: t.toFixed(1),
+            total_cost: cost.toFixed(0),
+            savings_inr: sav.toFixed(0),
+            score: score
+          });
+        }
+      }
+    }
+  }
+
+  scenarios.sort(function (a, b) { return a.score - b.score; });
+  return scenarios.map(function (s, i) {
+    return Object.assign({}, s, { rank: i + 1 });
+  });
+}
+
+/* ═══════════════════════════════════════════════════════
+   HELPERS
+═══════════════════════════════════════════════════════ */
+function setText(id, html) {
+  var el = document.getElementById(id);
+  if (el) el.innerHTML = html;
+}
+
+function setBarPct(id, pct) {
+  var el = document.getElementById(id);
+  if (el) el.style.width = Math.min(Math.max(pct, 0), 100) + '%';
+}
+
+function addLog(lvl, msg) {
+  var box = document.getElementById('log-box');
+  if (!box) return;
+  var t = new Date().toLocaleTimeString('en-IN', {
+    hour: '2-digit', minute: '2-digit', second: '2-digit'
+  });
+  var lvlMap = { info: 'lv-info', ok: 'lv-ok', warn: 'lv-warn', alrt: 'lv-alrt' };
+  var lvlTxt = { info: 'INFO', ok: ' OK ', warn: 'WARN', alrt: 'ALRT' };
+  var line = document.createElement('div');
+  line.className = 'll';
+  line.innerHTML =
+    '<span class="lt">' + t + '</span>' +
+    '<span class="' + (lvlMap[lvl] || 'lv-info') + '">[' + (lvlTxt[lvl] || 'INFO') + ']</span>' +
+    '<span class="lm">' + msg + '</span>';
+  box.appendChild(line);
+  box.scrollTop = box.scrollHeight;
+  while (box.children.length > 100) box.removeChild(box.firstChild);
+}
+
+/* ═══════════════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════════════ */
+function init() {
+  var s = document.createElement('script');
+  s.src = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js';
+  s.onerror = function () {
+    addLog('alrt', 'Chart.js failed to load — charts unavailable');
+  };
+  s.onload = function () {
+    initCharts();
+    addLog('info', 'CureLogic initialized');
+    addLog('info', 'Backend: ' + BACKEND);
+    addLog('info', 'Connecting via SSE...');
+    connectSSE();
+
+    /* Initial leaderboard */
+    fetch(BACKEND + '/api/scenarios')
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) {
+        if (j && j.scenarios) {
+          renderLeaderboard(j.scenarios.slice(0, 8));
+          addLog('ok', 'Leaderboard loaded from SVM backend');
+        } else {
+          throw new Error('no data');
+        }
+      })
+      .catch(function () {
+        renderLeaderboard(localScenarios(400, 'Summer', 0.48).slice(0, 8));
+        addLog('warn', 'Using local scenario data (backend offline)');
+      });
+
+    /* Periodic status heartbeat */
+    setInterval(function () {
+      fetch(BACKEND + '/api/status')
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          addLog('info',
+            'Heartbeat | readings=' + d.readings +
+            ' | sim=' + (d.simulator_on ? 'ON' : 'OFF') +
+            ' | str=' + (d.current_strength != null ? d.current_strength.toFixed(2) : '--') + 'MPa'
+          );
+        })
+        .catch(function () {});
+    }, 30000);
+  };
+  document.head.appendChild(s);
+}
+
+init();
+</script>
+</body>
+</html>

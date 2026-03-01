@@ -1,0 +1,215 @@
+; ╔══════════════════════════════════════════════════════════════════╗
+; ║  CureLogic — Proteus Virtual Hardware Schematic                  ║
+; ║  L&T CreaTech Hackathon | Problem Statement 1                    ║
+; ╠══════════════════════════════════════════════════════════════════╣
+; ║  This file documents the complete Proteus ISIS schematic.        ║
+; ║  Import the netlist below, or follow the MANUAL WIRING GUIDE.    ║
+; ╚══════════════════════════════════════════════════════════════════╝
+;
+; ── COMPONENTS USED ─────────────────────────────────────────────────
+;
+;   REF   PART                    PROTEUS LIBRARY     VALUE
+;   ───   ─────────────────────   ───────────────     ─────────────
+;   U1    NodeMCU ESP8266-12E     ESP8266             NodeMCU-12E
+;   U2    DS18B20 × 3 (SENSOR)    SENSORS             DS18B20
+;   R1    Resistor                DEVICE              4.7kΩ (pull-up)
+;   U3    16×2 LCD I2C            OPTOELEC            LM016L + PCF8574
+;   D1    LED Green               ACTIVE              LED-GREEN
+;   D2    LED Red                 ACTIVE              LED-RED
+;   R2    Resistor                DEVICE              220Ω (LED current)
+;   VCC   Power Rail              POWER               +3.3V
+;   GND   Ground                  POWER               GND
+;   VIRT  Virtual Terminal        INSTRUMENTS         —
+;   COMP  Compim (COM port)       INSTRUMENTS         COM1 (for HTTP sim)
+
+; ── NETLIST (for Proteus PCB import) ────────────────────────────────
+[NETLIST]
+; Format: NET=NetName COMP=RefDes PIN=PinNum
+
+; === Power rails ===
+NET=VCC33  COMP=VCC33  PIN=1
+NET=GND    COMP=GND    PIN=1
+
+; === NodeMCU power ===
+NET=VCC33  COMP=U1  PIN=VIN
+NET=GND    COMP=U1  PIN=GND
+
+; === DS18B20 Sensor 1 (Surface) ===
+NET=VCC33  COMP=U2A  PIN=VDD
+NET=GND    COMP=U2A  PIN=GND
+NET=DQ_BUS COMP=U2A  PIN=DQ     ; Data bus (all 3 sensors share this wire)
+
+; === DS18B20 Sensor 2 (Mid-depth) ===
+NET=VCC33  COMP=U2B  PIN=VDD
+NET=GND    COMP=U2B  PIN=GND
+NET=DQ_BUS COMP=U2B  PIN=DQ
+
+; === DS18B20 Sensor 3 (Core) ===
+NET=VCC33  COMP=U2C  PIN=VDD
+NET=GND    COMP=U2C  PIN=GND
+NET=DQ_BUS COMP=U2C  PIN=DQ
+
+; === Pull-up resistor (R1 = 4.7kΩ) ===
+NET=VCC33  COMP=R1   PIN=1
+NET=DQ_BUS COMP=R1   PIN=2
+
+; === NodeMCU D4 → DQ Bus ===
+NET=DQ_BUS COMP=U1   PIN=D4     ; GPIO2 — OneWire bus
+
+; === LCD I2C (PCF8574 backpack) ===
+NET=VCC33  COMP=U3   PIN=VDD
+NET=GND    COMP=U3   PIN=VSS
+NET=SDA    COMP=U3   PIN=SDA
+NET=SCL    COMP=U3   PIN=SCL
+
+; === NodeMCU I2C ===
+NET=SDA    COMP=U1   PIN=D2     ; GPIO4 → SDA
+NET=SCL    COMP=U1   PIN=D1     ; GPIO5 → SCL
+
+; === Status LED (D1=Green, D2=Red via transistor or direct) ===
+NET=LED_SIG COMP=U1  PIN=D5     ; GPIO14
+NET=LED_SIG COMP=R2  PIN=1
+NET=LED_A   COMP=R2  PIN=2
+NET=LED_A   COMP=D1  PIN=A      ; Anode (green LED)
+NET=GND     COMP=D1  PIN=K      ; Cathode
+
+; === Virtual Terminal (for Serial Monitor emulation) ===
+NET=TX_SIG  COMP=U1   PIN=TX
+NET=TX_SIG  COMP=VIRT PIN=RXD
+
+[END_NETLIST]
+
+; ────────────────────────────────────────────────────────────────────
+; MANUAL WIRING GUIDE (Step-by-step for Proteus ISIS)
+; ────────────────────────────────────────────────────────────────────
+;
+; STEP 1 — Place Components
+;   1. Open Proteus ISIS → New Project
+;   2. Press P (pick components) and search/add:
+;      ┌─────────────────────────────────────────────┐
+;      │  Search Term    │  Library     │  Qty        │
+;      ├─────────────────────────────────────────────┤
+;      │  "NodeMCU"      │  ESP8266     │  1 (U1)     │
+;      │  "DS18B20"      │  Sensors     │  3 (U2A-C)  │
+;      │  "LM016L"       │  Optoelec    │  1 (U3 LCD) │
+;      │  "LED-GREEN"    │  Active      │  1 (D1)     │
+;      │  "RES"          │  Device      │  2 (R1, R2) │
+;      └─────────────────────────────────────────────┘
+;   3. Add instruments: Virtual Terminal, Power (+3.3V), Ground
+;
+; STEP 2 — Wire OneWire Temperature Bus
+;   • Draw wire from U1.D4 → single node (label "DQ_BUS")
+;   • Connect U2A.DQ, U2B.DQ, U2C.DQ all to "DQ_BUS"
+;   • Connect R1 (4.7kΩ) between VCC33 and DQ_BUS  ← CRITICAL pull-up
+;   • Connect VCC33 → U2A/B/C.VDD
+;   • Connect GND   → U2A/B/C.GND
+;
+; STEP 3 — Wire LCD I2C
+;   • U1.D1 (GPIO5) → U3.SCL
+;   • U1.D2 (GPIO4) → U3.SDA
+;   • U3.VDD → VCC33
+;   • U3.VSS → GND
+;   Note: Set LCD I2C address to 0x27 in Proteus properties
+;
+; STEP 4 — Wire Status LED
+;   • U1.D5 → R2(220Ω) → D1.Anode → D1.Cathode → GND
+;
+; STEP 5 — Virtual Terminal (replaces real Serial Monitor)
+;   • U1.TX → VirtualTerminal.RXD
+;   • Properties: Baud=115200, Data=8, Parity=None, Stop=1
+;
+; STEP 6 — Simulate Temperature Values
+;   Proteus allows you to set DS18B20 output values interactively:
+;   • Double-click U2C (Core sensor)  → Temperature: 52°C
+;   • Double-click U2B (Mid sensor)   → Temperature: 44°C
+;   • Double-click U2A (Surface sens) → Temperature: 36°C
+;   • Run simulation → watch LCD display and virtual terminal
+;
+; STEP 7 — HTTP POST Simulation (via COMPIM / Virtual COM)
+;   Since Proteus cannot make real HTTP requests:
+;   • Add COMPIM component (virtual COM port bridge)
+;   • U1.TX → COMPIM.TX
+;   • On PC: run com2tcp or use a serial-to-TCP bridge app
+;   • Point it to localhost:5000/api/sensor_data
+;   • This allows the Proteus simulation to POST to your Flask backend
+;
+; ────────────────────────────────────────────────────────────────────
+; PROTEUS SIMULATION SCRIPT (for pitch video recording)
+; ────────────────────────────────────────────────────────────────────
+;
+; DEMO SEQUENCE (record as screen capture for hackathon video):
+;
+;  T+0s   : Run simulation → LCD shows "CureLogic v2.0 / Initializing"
+;  T+3s   : LCD shows "WiFi: AP Mode / 192.168.4.1" (no real WiFi in sim)
+;  T+10s  : Virtual terminal shows first maturity calculation
+;  T+30s  : Adjust U2C temperature from 52°C → 75°C (simulate high heat)
+;            → Virtual terminal prints "** THERMAL ALERT **"
+;            → LED2 (Red) starts fast-blinking
+;  T+45s  : Restore U2C → 52°C, watch alert clear
+;  T+60s  : Adjust temperatures upward to simulate strength approaching 25MPa
+;  T+90s  : Terminal prints "TARGET STRENGTH REACHED — READY TO DEMOULD!"
+;            → LED1 (Green) goes solid ON
+;
+; ────────────────────────────────────────────────────────────────────
+; EXPECTED VIRTUAL TERMINAL OUTPUT (paste this into your pitch video)
+; ────────────────────────────────────────────────────────────────────
+
+[EXPECTED_TERMINAL_OUTPUT]
+[CureLogic] Firmware v2.0 booting...
+[Sensors] Found 3 DS18B20(s)
+[WiFi] Trying: CureLogic_Lab
+..........
+[WiFi] Trying: iPhone_Hotspot
+..........
+[WiFi] Fallback AP started: CureLogic-Setup
+[OTA] Ready
+[CureLogic] Ready. Monitoring started.
+
+╔═══════════════════════════════════╗
+║     CureLogic | NodeMCU v2.0      ║
+╠═══════════════════════════════════╣
+║ Elapsed  :   0.02 hrs              ║
+║ T Core   :  52.0 °C               ║
+║ T Mid    :  44.3 °C               ║
+║ T Surface:  36.8 °C               ║
+║ Maturity :     41 °C·hr           ║
+║ SVM Str  :   4.87 MPa (19%)       ║
+║ ETA      :  18.4 hrs              ║
+║ Cost     : INR      9             ║
+║ Status   : Curing in progress     ║
+╚═══════════════════════════════════╝
+
+[Backend] Offline — using local fallback model
+
+╔═══════════════════════════════════╗
+║     CureLogic | NodeMCU v2.0      ║
+╠═══════════════════════════════════╣
+║ Elapsed  :   8.05 hrs              ║
+║ T Core   :  68.2 °C               ║
+║ T Mid    :  59.1 °C               ║
+║ T Surface:  47.4 °C               ║
+║ Maturity :   458 °C·hr           ║
+║ SVM Str  :  17.53 MPa (70%)       ║
+║ ETA      :   8.9 hrs              ║
+║ Cost     : INR   3730             ║
+║ Status   : Curing in progress     ║
+╚═══════════════════════════════════╝
+
+[WDT] Watchdog fed OK
+
+╔═══════════════════════════════════╗
+║     CureLogic | NodeMCU v2.0      ║
+╠═══════════════════════════════════╣
+║ Elapsed  :  18.02 hrs              ║
+║ T Core   :  41.5 °C               ║
+║ T Mid    :  36.2 °C               ║
+║ T Surface:  30.1 °C               ║
+║ Maturity :   922 °C·hr           ║
+║ SVM Str  :  25.41 MPa (102%)      ║
+║ ETA      :   0.0 hrs              ║
+║ Cost     : INR   8330             ║
+║ Status   : READY TO DEMOULD!      ║
+╚═══════════════════════════════════╝
+
+[CureLogic] TARGET STRENGTH REACHED at 18.02 hrs!
+[CureLogic] Cost: INR 8330 | Saved vs baseline: INR 2170
